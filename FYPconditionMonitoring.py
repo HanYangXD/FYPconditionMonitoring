@@ -123,6 +123,8 @@ while True:
 		cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
 		cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
 		cv2.drawContours(frame, [mouth], -1, (0, 255, 0), 1)
+		cv2.putText(frame, "mar frame: {:.2f}".format(COUNTER), (10, 90),
+			cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         # check to see if the eye aspect ratio is below the blink
 		# threshold, and if so, increment the blink frame counter
 		if ear < EYE_AR_THRESH or mar > MOUTH_AR_THRESH:
@@ -157,6 +159,8 @@ while True:
 					insertCounter += 1
 #					COUNTER = 0
 				else:
+					cv2.putText(frame, "gsheet frame: {:.2f}".format(GSHEETCOUNTER), (10, 120),
+						cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 					GSHEETCOUNTER += 1
 				# draw an alarm on the frame
 				
@@ -172,8 +176,8 @@ while True:
 		cv2.putText(frame, "EAR: {:.2f}".format(ear), (10, 30),
 			cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 		cv2.putText(frame, "MAR: {:.2f}".format(mar), (10, 60),
-			cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)    
- 
+			cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+		
 	# show the frame
 	cv2.imshow("Drowsiness Detector", frame)
 	key = cv2.waitKey(1) & 0xFF
