@@ -159,8 +159,6 @@ while True:
 					insertCounter += 1
 #					COUNTER = 0
 				else:
-					cv2.putText(frame, "gsheet frame: {:.2f}".format(GSHEETCOUNTER), (10, 120),
-						cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 					GSHEETCOUNTER += 1
 				# draw an alarm on the frame
 				
@@ -176,6 +174,8 @@ while True:
 		cv2.putText(frame, "EAR: {:.2f}".format(ear), (10, 30),
 			cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 		cv2.putText(frame, "MAR: {:.2f}".format(mar), (10, 60),
+			cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+		cv2.putText(frame, "gsheet frame: {:.2f}".format(GSHEETCOUNTER), (10, 120),
 			cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 		
 	# show the frame
