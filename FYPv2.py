@@ -39,6 +39,23 @@ def getCurrentTime():
 def getCurrentTimee():
     return datetime.datetime.now()
     
+def get_EAR_threshold(eye):
+    A = dist.euclidean(eye[1], eye[5])
+    B = dist.euclidean(eye[2], eye[4])
+    C = dist.euclidean(eye[0], eye[3])
+    earValue = (A+B)/(2.0*C)
+    return earValue
+
+def set_EAR_threshold(leftEye, rightEye):
+    leftEyeAspectRatio = get_EAR_threshold(leftEye)
+    rightEyeAspectRatio = get_EAR_threshold(rightEye)
+    EYE_AR_THRESHOLD = ((leftEyeAspectRatio + rightEyeAspectRatio) / 2.0) * (80 / 100)
+
+def sett(eye):
+    singletresh = get_EAR_threshold(eye)
+    return singletresh
+
+
 
 # def set_EAR_threshold(eye):
 EYE_AR_THRESH = 0.3
@@ -50,6 +67,9 @@ ap.add_argument("-w", "--webcam", type=int, default=0, help="index of webcam on 
 args = vars(ap.parse_args())
 
 MOUTH_AR_THRESH = 1.0
+EYE_AR_THRESHOLD = 0.0
+leftEyeAspectRatio = 0.0
+rightEyeAspectRatio = 0.0
 MOUTH_AR_CONSEC_FRAMES = 48
 
 COUNTER = 0
@@ -71,8 +91,8 @@ time.sleep(1.0)
 getCurrentTime()
 # lastUpdateTime = now - now #lastupdatetime is int, "TypeError: unsupported operand type(s) for +: 'int' and 'datetime.timedelta'"
 lastUpdateTime = getCurrentTimee()
-studentName = "haha"
-# studentName = input("Enter your name:")
+# studentName = "haha"
+studentName = input("Enter your name:")
 
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
@@ -80,7 +100,7 @@ client = gspread.authorize(creds)
 sheet = client.open("FYPconditionMonitoring").sheet1
 
 
-
+EARcalibrated = False
 
 
 while True:
@@ -90,11 +110,26 @@ while True:
     rects = detector(gray, 0)
 
     NOW = getCurrentTimee()
+    
+    
+
+
     for rect in rects:
         shape = predictor(gray, rect)
         shape = face_utils.shape_to_np(shape)
         leftEye = shape[lStart:lEnd]
         rightEye = shape[rStart:rEnd]
+
+        if not EARcalibrated:
+            set_EAR_threshold(leftEye,rightEye)
+            leftEyeAspectRatio = sett(leftEye)
+            rightEyeAspectRatio = sett(rightEye)
+            EYE_AR_THRESHOLD = ((leftEyeAspectRatio + rightEyeAspectRatio) / 2.0) * (80 / 100)
+            # print("jehe")
+            EARcalibrated = True
+
+        
+
         mouth = shape[mStart:mEnd]
         leftEAR = eye_aspect_ratio(leftEye)
         rightEAR = eye_aspect_ratio(rightEye)
@@ -126,7 +161,7 @@ while True:
                 #     insertCounter += 1
 
                 if NOW >= lastUpdateTime + datetime.timedelta(seconds=20):
-                    row = [dt_string,"EAR:",ear,"MAR:",mar,"Student Name:", studentName]
+                    row = [dt_string,"EAR:",ear,"MAR:",mar,"Student Name:", studentName] #remove string
                     index = 1
                     sheet.insert_row(row, index)
                     lastUpdateTime = NOW
@@ -136,13 +171,20 @@ while True:
             ALARM_ON = False
         cv2.putText(frame, "EAR: {:.2f}".format(ear), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         cv2.putText(frame, "MAR: {:.2f}".format(mar), (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        
+        cv2.putText(frame, "detected left eye: {:.2f}".format(leftEyeAspectRatio), (10, 180), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(frame, "detected right eye: {:.2f}".format(rightEyeAspectRatio), (10, 210), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(frame, "EAR threshold: {:.2f}".format(EYE_AR_THRESHOLD), (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        
         # cv2.putText(frame, "gsheet frame: {:.2f}".format(GSHEETCOUNTER), (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        cv2.putText(frame, "Current Time:" + NOW.strftime("%H:%M:%S"), (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    cv2.putText(frame, "Current Time:" + NOW.strftime("%H:%M:%S"), (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
     
     cv2.imshow("Drowsiness Detector", frame)
     key = cv2.waitKey(1) & 0xFF
     if key == ord("q"):
         break
+    if key == ord("r"):
+        EARcalibrated = False
 
 cv2.destroyAllWindows()
 vs.stop()
