@@ -38,39 +38,65 @@ def getCurrentTime():
 
 def getCurrentTimee():
     return datetime.datetime.now()
-    
-def get_EAR_threshold(eye):
-    A = dist.euclidean(eye[1], eye[5])
-    B = dist.euclidean(eye[2], eye[4])
-    C = dist.euclidean(eye[0], eye[3])
-    earValue = (A+B)/(2.0*C)
-    return earValue
 
 def set_EAR_threshold(leftEye, rightEye):
-    leftEyeAspectRatio = get_EAR_threshold(leftEye)
-    rightEyeAspectRatio = get_EAR_threshold(rightEye)
-    EYE_AR_THRESHOLD = ((leftEyeAspectRatio + rightEyeAspectRatio) / 2.0) * (80 / 100)
+    leftEyeAspectRatio = eye_aspect_ratio(leftEye)
+    rightEyeAspectRatio = eye_aspect_ratio(rightEye)
+    return (((leftEyeAspectRatio + rightEyeAspectRatio) / 2.0) * (80 / 100))
 
 def sett(eye):
-    singletresh = get_EAR_threshold(eye)
+    singletresh = eye_aspect_ratio(eye)
     return singletresh
 
+def argumentParse():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-a", "--alarm", type=str, default="", help="path alarm .WAV file")
+    ap.add_argument("-w", "--webcam", type=int, default=0, help="index of webcam on system")
+    return vars(ap.parse_args())
+
+def set_Mouth_Treshold():
+    return 1.0
+
+def initDetector():
+    return dlib.get_frontal_face_detector()
+    
+def initPredictor():
+    return dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 
 
-# def set_EAR_threshold(eye):
-EYE_AR_THRESH = 0.3
+
+def setLandmarks(part):
+    return face_utils.FACIAL_LANDMARKS_IDXS[part]
+
+def launchVideoStream():
+    vs = VideoStream(src=args["webcam"]).start()
+    return vs
+
+def getUserName():
+    return input("Enter your name:")
+
+def initGsheet(sheetName):
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+    creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
+    client = gspread.authorize(creds)
+    return client.open(sheetName).sheet1
+
+
+
 EYE_AR_CONSEC_FRAMES = 48
+MOUTH_AR_CONSEC_FRAMES = 48
 
-ap = argparse.ArgumentParser()
-ap.add_argument("-a", "--alarm", type=str, default="", help="path alarm .WAV file")
-ap.add_argument("-w", "--webcam", type=int, default=0, help="index of webcam on system")
-args = vars(ap.parse_args())
 
-MOUTH_AR_THRESH = 1.0
-EYE_AR_THRESHOLD = 0.0
+
+EYE_AR_THRESH = 0.3 #insert default value (will be calibrated once the system launch) 
+MOUTH_AR_THRESH = set_Mouth_Treshold()
+
+args = argumentParse()
+
+
+
 leftEyeAspectRatio = 0.0
 rightEyeAspectRatio = 0.0
-MOUTH_AR_CONSEC_FRAMES = 48
 
 COUNTER = 0
 GSHEETCOUNTER = 0
@@ -78,26 +104,31 @@ insertCounter = 0
 ALARM_ON = False
 
 
-detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 
-(lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
-(rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
-(mStart, mEnd) = face_utils.FACIAL_LANDMARKS_IDXS["mouth"]
+detector = initDetector()
+predictor = initPredictor()
 
 
-vs = VideoStream(src=args["webcam"]).start()
+
+
+(lStart, lEnd) = setLandmarks("left_eye")
+(rStart, rEnd) = setLandmarks("right_eye")
+(mStart, mEnd) = setLandmarks("mouth")
+
+
+
+vs = launchVideoStream()
 time.sleep(1.0)
 getCurrentTime()
-# lastUpdateTime = now - now #lastupdatetime is int, "TypeError: unsupported operand type(s) for +: 'int' and 'datetime.timedelta'"
-lastUpdateTime = getCurrentTimee()
-# studentName = "haha"
-studentName = input("Enter your name:")
 
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
-client = gspread.authorize(creds)
-sheet = client.open("FYPconditionMonitoring").sheet1
+lastUpdateTime = getCurrentTimee()
+userName = getUserName()
+
+
+
+
+    
+sheet = initGsheet("FYPconditionMonitoring")    
 
 
 EARcalibrated = False
@@ -121,7 +152,7 @@ while True:
         rightEye = shape[rStart:rEnd]
 
         if not EARcalibrated:
-            set_EAR_threshold(leftEye,rightEye)
+            EYE_AR_THRESHOLD = set_EAR_threshold(leftEye,rightEye)
             leftEyeAspectRatio = sett(leftEye)
             rightEyeAspectRatio = sett(rightEye)
             EYE_AR_THRESHOLD = ((leftEyeAspectRatio + rightEyeAspectRatio) / 2.0) * (80 / 100)
@@ -147,7 +178,7 @@ while True:
             if COUNTER >= EYE_AR_CONSEC_FRAMES or COUNTER >= MOUTH_AR_CONSEC_FRAMES:
                 if not ALARM_ON:
                     ALARM_ON = True
-                    alertUser("alert.wav")
+                    alertUser("alert.mp3")
                 timestamp = datetime.datetime.now()
                 dt_string = timestamp.strftime("%d/%m/%Y %H:%M:%S")
                 
@@ -161,7 +192,7 @@ while True:
                 #     insertCounter += 1
 
                 if NOW >= lastUpdateTime + datetime.timedelta(seconds=20):
-                    row = [dt_string,"EAR:",ear,"MAR:",mar,"Student Name:", studentName] #remove string
+                    row = [dt_string, ear, mar, userName] 
                     index = 1
                     sheet.insert_row(row, index)
                     lastUpdateTime = NOW
@@ -169,7 +200,7 @@ while True:
         else:
             COUNTER = 0
             ALARM_ON = False
-        cv2.putText(frame, "v2: {:.2f}".format(ear), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(frame, "v3: {:.2f}".format(ear), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         cv2.putText(frame, "MAR: {:.2f}".format(mar), (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         
         cv2.putText(frame, "detected left eye: {:.2f}".format(leftEyeAspectRatio), (10, 180), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
