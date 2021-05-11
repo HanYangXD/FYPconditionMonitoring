@@ -84,15 +84,22 @@ print("[INFO] starting video stream thread...")
 vs = VideoStream(src=args["webcam"]).start()
 time.sleep(1.0)
 
+# ask for user's name
+studentName = "haha"
+#studentName = input("Enter your name:")
+
+# open google sheet
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 creds = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
 client = gspread.authorize(creds)
 sheet = client.open("FYPconditionMonitoring").sheet1
+
 # loop over frames from the video stream
 while True:
 	# grab the frame from the threaded video file stream, resize
 	# it, and convert it to grayscale
 	# channels)
+	GSHEETCOUNTER += 1
 	frame = vs.read()
 	frame = imutils.resize(frame, width=450)
 	gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -138,28 +145,27 @@ while True:
 					# check to see if an alarm file was supplied,
 					# and if so, start a thread to have the alarm
 					# sound played in the background
-					if args["alarm"] != "":
-						t = Thread(target=sound_alarm,
-							args=(args["alarm"],))
-						t.deamon = True
-						t.start()
+					#if args["alarm"] != "":
+					#	t = Thread(target=sound_alarm,
+					#		args=(args["alarm"],))
+					#	t.deamon = True
+					#	t.start()
+					sound_alarm("alert.wav")
 				timestamp = datetime.datetime.now()
 				dt_string = timestamp.strftime("%d/%m/%Y %H:%M:%S")
 
-				#sheet.update_cell(1, 1, "I just wrote to a spreadsheet using Python!")
 				cv2.putText(frame, "DROWSINESS ALERT!", (300, 30),
 				cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 				
-				
 				if GSHEETCOUNTER > 300 or insertCounter == 0:
-					row = [dt_string,"EAR:",ear,"MAR:",mar,"a,","Spreadsheet","with","Python"]
+					row = [dt_string,"EAR:",ear,"MAR:",mar,"Student Name:", studentName]
 					index = 1
 					sheet.insert_row(row, index)
 					GSHEETCOUNTER = 0
 					insertCounter += 1
 #					COUNTER = 0
-				else:
-					GSHEETCOUNTER += 1
+				#else:
+				#	GSHEETCOUNTER += 1
 				# draw an alarm on the frame
 				
 				
