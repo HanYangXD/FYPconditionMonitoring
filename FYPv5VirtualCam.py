@@ -1,3 +1,4 @@
+from pyvirtualcam.camera import PixelFormat
 from scipy.spatial import distance as dist
 from imutils.video import VideoStream
 from imutils import face_utils
@@ -25,7 +26,7 @@ def eye_aspect_ratio(eye):
     earValue = (A+B)/(2.0*C)
     return earValue
 
-def mouth_aspect_ratio(mouth):
+def calculateCurrentMAR(mouth):
     D = dist.euclidean(mouth[13], mouth[19])
     E = dist.euclidean(mouth[14], mouth[18])
     F = dist.euclidean(mouth[15], mouth[17])
@@ -78,7 +79,7 @@ def initGsheet(sheetName):
 
 def readResizeVS():
     frame = vs.read()
-    return imutils.resize(frame, width=450)
+    return imutils.resize(frame, width=640)
 
 def grayScale(color):
     
@@ -142,20 +143,21 @@ EARcalibrated = False
 
 # userName = getUserName()
 userName = "haha"
-with pyvirtualcam.Camera(width=640,height=480,fps=30) as cam:
+with pyvirtualcam.Camera(width=640,height=480,fps=30,fmt=PixelFormat.RGB) as cam:
     print(f'Using virtual camera: {cam.device}')
     frames = np.zeros((cam.height, cam.width, 3), np.uint8)
     while True:
         
-        # cam.sleep_until_next_frame()
+        # shortcut keys
         key = cv2.waitKey(1) & 0xFF
-        if key == ord("q"):
+        if key == ord("q"): # "q" to Quit the program
             break
-        if key == ord("r"):
+        if key == ord("r"): # "r" to recalibrate EAR (Eye Aspect Ratio)
             EARcalibrated = False
 
         frame = readResizeVS()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
         rects = grayScale(gray)
 
         now = getCurrentTimee()
@@ -172,10 +174,9 @@ with pyvirtualcam.Camera(width=640,height=480,fps=30) as cam:
             mouth = assignShape(mStart, mEnd)
             leftEAR = eye_aspect_ratio(leftEye)
             rightEAR = eye_aspect_ratio(rightEye)
-            mar = mouth_aspect_ratio(mouth)
+            mar = calculateCurrentMAR(mouth)
             ear = calculateCurrentEAR(leftEAR, rightEAR)
             
-
             drawHull(leftEye)
             drawHull(rightEye)
             drawHull(mouth)
@@ -203,8 +204,11 @@ with pyvirtualcam.Camera(width=640,height=480,fps=30) as cam:
         cv2.putText(frame, "Current Time:" + now.strftime("%H:%M:%S"), (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         cv2.imshow("Drowsiness Detector", frame)
-        frames[:] = cam.frames_sent  # grayscale animation
-        cam.send(vs.frame)
+        # frames[:] = frame
+        # frames[:] = cam.frames_sent  # grayscale animation
+        # frames[3] = 255
+        frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+        cam.send(frame)
     cv2.destroyAllWindows()
     vs.stop()
 
