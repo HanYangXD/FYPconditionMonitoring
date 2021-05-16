@@ -1,3 +1,5 @@
+from imutils.video.webcamvideostream import WebcamVideoStream
+from pyvirtualcam.camera import PixelFormat
 from scipy.spatial import distance as dist
 from imutils.video import VideoStream
 from imutils import face_utils
@@ -13,6 +15,20 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import datetime;
 import time;
+import pyvirtualcam;
+
+def test_EAR():
+    A=3
+    B=3
+    C=12
+    assert (A+B)/(2.0*C)==0.25, "should be 0.25"
+    
+def test_MAR():
+    D=2
+    E=1
+    F=2
+    G=12
+    assert (D+E+F)/(2.0*G)==0.20833333333333334, "should be 0.20833333333333334"
 
 def alertUser(alarmName):
     playsound.playsound(alarmName)
@@ -24,13 +40,12 @@ def eye_aspect_ratio(eye):
     earValue = (A+B)/(2.0*C)
     return earValue
 
-def mouth_aspect_ratio(mouth):
+def calculateCurrentMAR(mouth):
     D = dist.euclidean(mouth[13], mouth[19])
     E = dist.euclidean(mouth[14], mouth[18])
     F = dist.euclidean(mouth[15], mouth[17])
     G = dist.euclidean(mouth[13], mouth[16])
     marValue = (D+E+F)/(2.0*G)
-    print(D,E,F,G)
     return marValue
 
 def getCurrentTimee():
@@ -78,7 +93,7 @@ def initGsheet(sheetName):
 
 def readResizeVS():
     frame = vs.read()
-    return imutils.resize(frame, width=450)
+    return imutils.resize(frame, width=640)
 
 def grayScale(color):
     
@@ -141,64 +156,76 @@ sheet = initGsheet("FYPconditionMonitoring")
 EARcalibrated = False
 
 # userName = getUserName()
-userName = "hahaaha"
+userName = "haha"
 
-while True:
-    
-    key = cv2.waitKey(1) & 0xFF
-    if key == ord("q"):
-        break
-    if key == ord("r"):
-        EARcalibrated = False
+# test_EAR()
+# test_MAR()
+with pyvirtualcam.Camera(width=640,height=480,fps=30,fmt=PixelFormat.RGB) as cam:
+    print(f'Using virtual camera: {cam.device}')
+    frames = np.zeros((cam.height, cam.width, 3), np.uint8)
+    while True:
+        
+        # shortcut keys
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q"): # "q" to Quit the program
+            break
+        if key == ord("r"): # "r" to recalibrate EAR (Eye Aspect Ratio)
+            EARcalibrated = False
 
-    frame = readResizeVS()
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    rects = grayScale(gray)
+        frame = readResizeVS()
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        rects = grayScale(gray)
 
-    now = getCurrentTimee()
-    
-    for rect in rects:
-        shape = initShape()
-        leftEye = assignShape(lStart, lEnd)
-        rightEye = assignShape(rStart, rEnd)
+        now = getCurrentTimee()
+        
+        for rect in rects:
+            shape = initShape()
+            leftEye = assignShape(lStart, lEnd)
+            rightEye = assignShape(rStart, rEnd)
 
-        if not EARcalibrated:
-            EARthreshold, leftEyeAspectRatio, rightEyeAspectRatio = calibrateEAR(leftEye, rightEye)
-            EARcalibrated = True
+            if not EARcalibrated:
+                EARthreshold, leftEyeAspectRatio, rightEyeAspectRatio = calibrateEAR(leftEye, rightEye)
+                EARcalibrated = True
 
-        mouth = assignShape(mStart, mEnd)
-        leftEAR = eye_aspect_ratio(leftEye)
-        rightEAR = eye_aspect_ratio(rightEye)
-        mar = mouth_aspect_ratio(mouth)
-        ear = calculateCurrentEAR(leftEAR, rightEAR)
+            mouth = assignShape(mStart, mEnd)
+            leftEAR = eye_aspect_ratio(leftEye)
+            rightEAR = eye_aspect_ratio(rightEye)
+            mar = calculateCurrentMAR(mouth)
+            ear = calculateCurrentEAR(leftEAR, rightEAR)
+            
+            drawHull(leftEye)
+            drawHull(rightEye)
+            drawHull(mouth)
 
-        drawHull(leftEye)
-        drawHull(rightEye)
-        drawHull(mouth)
-
-        displayText(frame, "Consec frame: {:.2f}", COUNTER, 10, 90, cv2.FONT_HERSHEY_SIMPLEX)
-        if ear < EARthreshold or mar > MAR_THRESHOLD:
-            COUNTER += 1
-            if COUNTER >= EYE_AR_CONSEC_FRAMES or COUNTER >= MOUTH_AR_CONSEC_FRAMES:
-                if now >= lastAlertTime + datetime.timedelta(seconds=5):
-                    alertUser("alert.mp3")
-                    lastAlertTime = now
-                
-                timestamp = now.strftime("%d/%m/%Y %H:%M:%S")
-                cv2.putText(frame, "DROWSINESS ALERT!", (300, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-               
-                if now >= lastUpdateTime + datetime.timedelta(seconds=20):
+            displayText(frame, "Consec frame: {:.2f}", COUNTER, 10, 90, cv2.FONT_HERSHEY_SIMPLEX)
+            if ear < EARthreshold or mar > MAR_THRESHOLD:
+                COUNTER += 1
+                if COUNTER >= EYE_AR_CONSEC_FRAMES or COUNTER >= MOUTH_AR_CONSEC_FRAMES:
+                    if now >= lastAlertTime + datetime.timedelta(seconds=5):
+                        alertUser("alert.mp3")
+                        lastAlertTime = now
                     
-                    lastUpdateTime = insertData()
+                    timestamp = now.strftime("%d/%m/%Y %H:%M:%S")
+                    cv2.putText(frame, "DROWSINESS ALERT!", (300, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                
+                    if now >= lastUpdateTime + datetime.timedelta(seconds=20):
+                        
+                        lastUpdateTime = insertData()
 
-        else:
-            COUNTER = 0
+            else:
+                COUNTER = 0
 
-        displayStats()   
+            displayStats()   
 
-    cv2.putText(frame, "Current Time:" + now.strftime("%H:%M:%S"), (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(frame, "Current Time:" + now.strftime("%H:%M:%S"), (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-    cv2.imshow("Drowsiness Detector", frame)
-cv2.destroyAllWindows()
-vs.stop()
+        cv2.imshow("Drowsiness Detector", frame)
+        # frames[:] = frame
+        # frames[:] = cam.frames_sent  # grayscale animation
+        # frames[3] = 255
+        frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
+        cam.send(frame)
+    cv2.destroyAllWindows()
+    vs.stop()
 
