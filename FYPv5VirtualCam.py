@@ -103,7 +103,7 @@ def calculateCurrentEAR(leftEAR, rightEAR):
 
 def drawHull(part):
     cv2.convexHull(part)
-    cv2.drawContours(frame, [part], -1, (0, 255, 0), 1)
+    cv2.drawContours(frame, [part], -1, (255, 255, 255), 1)
 
 def displayText(frame, texts, variables, position1, position, font):
     cv2.putText(frame, texts.format(variables), (position1, position), font, 0.7, (0, 0, 255), 2)
@@ -141,8 +141,8 @@ lastAlertTime = getCurrentTimee()
 sheet = initGsheet("FYPconditionMonitoring")    
 EARcalibrated = False
 
-# userName = getUserName()
-userName = "haha"
+userName = getUserName()
+# userName = "haha"
 with pyvirtualcam.Camera(width=640,height=480,fps=30,fmt=PixelFormat.RGB) as cam:
     print(f'Using virtual camera: {cam.device}')
     frames = np.zeros((cam.height, cam.width, 3), np.uint8)
