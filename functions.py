@@ -106,7 +106,7 @@ def drawHull(frame, part):
     cv2.drawContours(frame, [part], -1, (255, 255, 255), 1)
 
 def displayText(frame, texts, variables, position1, position, font):
-    cv2.putText(frame, texts.format(variables), (position1, position), font, 0.7, (0, 0, 255), 2)
+    cv2.putText(frame, texts.format(variables), (position1, position), font, 1, (0, 0, 255), 2)
 
 def insertData(timestamp, ear, mar):
     row = [timestamp, ear, mar, userName] 
@@ -115,11 +115,11 @@ def insertData(timestamp, ear, mar):
     return getCurrentTimee()
 
 def displayStats(frame, ear, mar, leftEyeAspectRatio, rightEyeAspectRatio, EARthreshold):
-    displayText(frame, "EAR: {:.2f}", ear, 10, 30, cv2.FONT_HERSHEY_SIMPLEX)
-    displayText(frame, "MAR: {:.2f}", mar, 10, 60, cv2.FONT_HERSHEY_SIMPLEX)
-    displayText(frame, "detected left eye: {:.2f}", leftEyeAspectRatio, 10, 180, cv2.FONT_HERSHEY_SIMPLEX)
-    displayText(frame, "detected left eye: {:.2f}", rightEyeAspectRatio, 10, 210, cv2.FONT_HERSHEY_SIMPLEX)        
-    displayText(frame, "EAR threshold: {:.2f}", EARthreshold, 10, 120, cv2.FONT_HERSHEY_SIMPLEX)     
+    displayText(frame, "EAR: {:.2f}", ear, 30, 160, cv2.FONT_HERSHEY_SIMPLEX) #usethis
+    displayText(frame, "MAR: {:.2f}", mar, 30, 190, cv2.FONT_HERSHEY_SIMPLEX)
+    # displayText(frame, "detected left eye: {:.2f}", leftEyeAspectRatio, 10, 180, cv2.FONT_HERSHEY_SIMPLEX)
+    # displayText(frame, "detected right eye: {:.2f}", rightEyeAspectRatio, 10, 210, cv2.FONT_HERSHEY_SIMPLEX)        
+    # displayText(frame, "EAR threshold: {:.2f}", EARthreshold, 10, 120, cv2.FONT_HERSHEY_SIMPLEX)     
 
 
 ####~~~~#### ####~~~~#### ####~~~~####
