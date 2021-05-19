@@ -154,7 +154,7 @@ with pyvirtualcam.Camera(width=640,height=480,fps=30,fmt=PixelFormat.RGB) as cam
             break
         if key == ord("r"): # "r" to recalibrate EAR (Eye Aspect Ratio)
             EARcalibrated = False
-
+ 
         frame = readResizeVS()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
