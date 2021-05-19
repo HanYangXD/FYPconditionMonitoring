@@ -123,9 +123,9 @@ def displayStats(frame, ear, mar, leftEyeAspectRatio, rightEyeAspectRatio, EARth
     # displayText(frame, "EAR threshold: {:.2f}", EARthreshold, 10, 120, cv2.FONT_HERSHEY_SIMPLEX)     
 
 
-####~~~~#### ####~~~~#### ####~~~~####
-####~~~~#### Initialiser  ####~~~~####
-####~~~~#### ####~~~~#### ####~~~~####
+####~~~~####  ####~~~~####  ####~~~~####
+####~~~~#### Initialisation ####~~~~####
+####~~~~####  ####~~~~####  ####~~~~####
 EYE_AR_CONSEC_FRAMES = 48
 MOUTH_AR_CONSEC_FRAMES = 48
 MAR_THRESHOLD = set_Mouth_Treshold()
@@ -149,6 +149,10 @@ sheet = initGsheet("FYPconditionMonitoring")
 EARcalibrated = False
 
 toggle = itertools.cycle([True, False]).__next__
-
+startTimer = False
+ensureOnce = True
+showHull = False
+displayTextOnScreen = True
+drowsyTimer = getCurrentTimee()
 
 userName = getUserName()

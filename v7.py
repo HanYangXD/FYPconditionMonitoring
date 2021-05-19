@@ -1,11 +1,5 @@
 from functions import *
 
-startTimer = False
-ensureOnce = True
-showHull = False
-displayTextOnScreen = True
-drowsyTimer = getCurrentTimee()
-print(drowsyTimer)
 #using virtual camera
 with pyvirtualcam.Camera(width=640,height=480,fps=30,fmt=PixelFormat.RGB) as cam:
     frames = np.zeros((cam.height, cam.width, 3), np.uint8)
@@ -24,7 +18,6 @@ with pyvirtualcam.Camera(width=640,height=480,fps=30,fmt=PixelFormat.RGB) as cam
         frame = readResizeVS()
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         rects = grayScale(gray)
-
         now = getCurrentTimee()
         
         for rect in rects:
@@ -58,19 +51,15 @@ with pyvirtualcam.Camera(width=640,height=480,fps=30,fmt=PixelFormat.RGB) as cam
                     drowsyTimer = now
                     ensureOnce = False
 
-                cv2.putText(frame, now.strftime("%H:%M:%S"), (60, 300), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,0,255), 2)
-                cv2.putText(frame, str(drowsyTimer), (60, 350), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,0,255), 2)
                 if now >= drowsyTimer + datetime.timedelta(seconds=3):
+                    timestamp = now.strftime("%d/%m/%Y %H:%M:%S")
+                    cv2.putText(frame, "TIREDNESS ALERT!", (30, 60), cv2.FONT_HERSHEY_DUPLEX, 1.2, (0, 0, 255), 4)
                     if now >= lastAlertTime + datetime.timedelta(seconds=5):
                         alertUser("alert.mp3")
                         lastAlertTime = now
                         drowsyCounter += 1
-                    
-                    timestamp = now.strftime("%d/%m/%Y %H:%M:%S")
-                    cv2.putText(frame, "TIREDNESS ALERT!", (30, 60), cv2.FONT_HERSHEY_DUPLEX, 1.2, (0, 0, 255), 4)
                 
                     if now >= lastUpdateTime + datetime.timedelta(seconds=20):
-                        
                         lastUpdateTime = insertData(timestamp, ear, mar)
                         
             else:
@@ -79,10 +68,8 @@ with pyvirtualcam.Camera(width=640,height=480,fps=30,fmt=PixelFormat.RGB) as cam
 
             displayStats(frame, ear, mar, leftEyeAspectRatio, rightEyeAspectRatio, EARthreshold)   
 
-        # cv2.putText(frame, "Current Time:" + now.strftime("%H:%M:%S"), (10, 150), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         cv2.putText(frame, "(q - quit) | (r - recalibrate EAR)", (60, 450), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,0,255), 2)
-        cv2.putText(frame, "Tiredness counter: {:.2f}".format(drowsyCounter), (30, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.85, (0, 0, 255), 2)
-        
+        cv2.putText(frame, "Tiredness counter: {:.2f}".format(drowsyCounter), (30, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.85, (0, 0, 255), 2)        
         cv2.imshow("Tiredness Detector", frame)
         frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
         cam.send(frame)
