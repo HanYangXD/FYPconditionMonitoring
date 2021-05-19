@@ -15,6 +15,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import datetime
 import time
 import pyvirtualcam
+import itertools
 
 def alertUser(alarmName):
     playsound.playsound(alarmName)
@@ -146,5 +147,8 @@ lastUpdateTime = getCurrentTimee()
 lastAlertTime = getCurrentTimee()
 sheet = initGsheet("FYPconditionMonitoring")    
 EARcalibrated = False
+
+toggle = itertools.cycle([True, False]).__next__
+
 
 userName = getUserName()
