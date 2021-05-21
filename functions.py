@@ -31,11 +31,11 @@ def calculateCurrentMAR(mouth):
     D = dist.euclidean(mouth[13], mouth[19])
     E = dist.euclidean(mouth[14], mouth[18])
     F = dist.euclidean(mouth[15], mouth[17])
-    G = dist.euclidean(mouth[13], mouth[16])
+    G = dist.euclidean(mouth[12], mouth[16])
     marValue = (D+E+F)/(2.0*G)
     return marValue
 
-def getCurrentTimee():
+def getCurrentTime():
     return datetime.datetime.now()
 
 def set_EAR_threshold(leftEye, rightEye):
@@ -70,7 +70,23 @@ def launchVideoStream():
     return vs
 
 def getUserName():
-    return input("Enter your name:")
+    name = input("\nEnter your name: ")
+    
+    while validateName(name):
+        name = input("\nInvalid Name! Please enter your name: ")
+        validateName(name)
+    print("Welcome "+ name + ", launching Condition Monitoring System...")
+    return name
+
+def validateName(name):
+    contain_digit = any(map(str.isdigit, name))
+    input_length = len(name)
+    is_name = any(map(str.isalpha, name))
+    if contain_digit or not is_name or input_length==0:
+        return True
+    else:
+        return False
+
 
 def initGsheet(sheetName):
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
@@ -97,7 +113,7 @@ def calibrateEAR(leftEye, rightEye):
     leftEyeAspectRatio = eye_aspect_ratio(leftEye)
     rightEyeAspectRatio = eye_aspect_ratio(rightEye)
     EARthreshold = ((leftEyeAspectRatio + rightEyeAspectRatio) / 2.0) * (80 / 100)
-    return EARthreshold , leftEyeAspectRatio, rightEyeAspectRatio
+    return EARthreshold, leftEyeAspectRatio, rightEyeAspectRatio
 
 def calculateCurrentEAR(leftEAR, rightEAR):
     return (leftEAR+rightEAR)/2.0
@@ -113,7 +129,7 @@ def insertData(timestamp, ear, mar):
     row = [timestamp, ear, mar, userName] 
     index = 1
     sheet.insert_row(row, index)
-    return getCurrentTimee()
+    return getCurrentTime()
 
 def displayStats(frame, ear, mar, leftEyeAspectRatio, rightEyeAspectRatio, EARthreshold):
     displayText(frame, "EAR: {:.2f}", ear, 30, 160, cv2.FONT_HERSHEY_SIMPLEX) #usethis
@@ -126,11 +142,14 @@ def displayStats(frame, ear, mar, leftEyeAspectRatio, rightEyeAspectRatio, EARth
 ####~~~~####  ####~~~~####  ####~~~~####
 ####~~~~#### Initialisation ####~~~~####
 ####~~~~####  ####~~~~####  ####~~~~####
+print("Welcome to Condition Monitoring System")
+userName = getUserName()
+
 EYE_AR_CONSEC_FRAMES = 48
 MOUTH_AR_CONSEC_FRAMES = 48
 MAR_THRESHOLD = set_Mouth_Treshold()
 COUNTER = 0
-drowsyCounter = 0
+tiredCounter = 0
 
 args = argumentParse()
 
@@ -143,8 +162,8 @@ predictor = initPredictor()
 
 vs = launchVideoStream()
 
-lastUpdateTime = getCurrentTimee()
-lastAlertTime = getCurrentTimee()
+lastUpdateTime = getCurrentTime()
+lastAlertTime = getCurrentTime()
 sheet = initGsheet("FYPconditionMonitoring")    
 EARcalibrated = False
 
@@ -153,6 +172,6 @@ startTimer = False
 ensureOnce = True
 showHull = False
 displayTextOnScreen = True
-drowsyTimer = getCurrentTimee()
+drowsyTimer = getCurrentTime()
 
-userName = getUserName()
+
